@@ -1714,9 +1714,11 @@ class Batch(object):
         not be returned in the original order, making this information useful.
 
     """
-    def __init__(self, images=None, keypoints=None, data=None):
+    def __init__(self, images=None, images_gt=None, keypoints=None, data=None):
         self.images = images
         self.images_aug = None
+        self.images_gt = images_gt
+        self.images_gt_aug = None
         self.keypoints = keypoints
         self.keypoints_aug = None
         self.data = data
@@ -1887,6 +1889,7 @@ class BackgroundAugmenter(object):
         self.nb_workers_finished = 0
 
         self.augment_images = True
+        self.augment_images_gt = True
         self.augment_keypoints = True
 
         seeds = current_random_state().randint(0, 10**6, size=(nb_workers,))
@@ -1939,12 +1942,17 @@ class BackgroundAugmenter(object):
                 batch = pickle.loads(batch_str)
                 # augment the batch
                 batch_augment_images = batch.images is not None and self.augment_images
+                batch_augment_images_gt = batch.images_gt is not None and self.augment_images_gt
                 batch_augment_keypoints = batch.keypoints is not None and self.augment_keypoints
 
                 if batch_augment_images and batch_augment_keypoints:
                     augseq_det = augseq.to_deterministic() if not augseq.deterministic else augseq
                     batch.images_aug = augseq_det.augment_images(batch.images)
                     batch.keypoints_aug = augseq_det.augment_keypoints(batch.keypoints)
+                elif batch_augment_images and batch_augment_images_gt:
+                    augseq_det = augseq.to_deterministic() if not augseq.deterministic else augseq
+                    batch.images_aug = augseq_det.augment_images(batch.images)
+                    batch.images_aug_gt = augseq_det.augment_images(batch.images_gt)
                 elif batch_augment_images:
                     batch.images_aug = augseq.augment_images(batch.images)
                 elif batch_augment_keypoints:
