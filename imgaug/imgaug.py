@@ -1952,7 +1952,7 @@ class BackgroundAugmenter(object):
                     batch.images_aug = augseq_det.augment_images(batch.images)
                     batch.keypoints_aug = augseq_det.augment_keypoints(batch.keypoints)
                 elif batch_augment_images and batch_augment_images_gt:
-                    batch_gt_mask = np.array(~(batch.images_aug_gt == -1), dtype=np.int)
+                    batch_gt_mask = np.array(np.isnan(batch.images_gt), dtype=np.int)
                     
                     augseq_det = augseq.to_deterministic() if not augseq.deterministic else augseq
                     batch.images_aug = augseq_det.augment_images(batch.images)
@@ -1960,7 +1960,7 @@ class BackgroundAugmenter(object):
                     batch_gt_mask = augseq_det.augment_images(batch_gt_mask)
         
                     batch.images_aug_gt[np.isnan(batch.images_aug_gt)] = -1
-                    batch.images_aug_gt[~(batch_gt_mask == 0)] = -1.  # mask ground truth for custom masked loss
+                    batch.images_aug_gt[batch_gt_mask == 1] = -1.  # mask ground truth for custom masked loss
                     batch.images_aug_gt = batch.images_aug_gt.astype(np.int)
 
                     augseq2_det = augseq2.to_deterministic() if not augseq2.deterministic else augseq2
