@@ -100,8 +100,25 @@ class WithColorspace(Augmenter):
             ).augment_images(images=result)
         return result
 
+    def _augment_heatmaps(self, heatmaps, random_state, parents, hooks):
+        result = heatmaps
+        if hooks.is_propagating(heatmaps, augmenter=self, parents=parents, default=True):
+            result = self.children.augment_heatmaps(
+                result,
+                parents=parents + [self],
+                hooks=hooks,
+            )
+        return result
+
     def _augment_keypoints(self, keypoints_on_images, random_state, parents, hooks):
-        return keypoints_on_images
+        result = keypoints_on_images
+        if hooks.is_propagating(keypoints_on_images, augmenter=self, parents=parents, default=True):
+            result = self.children.augment_keypoints(
+                result,
+                parents=parents + [self],
+                hooks=hooks,
+            )
+        return result
 
     def _to_deterministic(self):
         aug = self.copy()
@@ -153,6 +170,9 @@ def AddToHueAndSaturation(value=0, per_channel=False, from_colorspace="RGB", cha
     that channel).
 
     """
+    if name is None:
+        name = "Unnamed%s" % (ia.caller_name(),)
+
     return WithColorspace(
         to_colorspace="HSV",
         from_colorspace=from_colorspace,
@@ -348,6 +368,9 @@ class ChangeColorspace(Augmenter):
 
         return images
 
+    def _augment_heatmaps(self, heatmaps, random_state, parents, hooks):
+        return heatmaps
+
     def _augment_keypoints(self, keypoints_on_images, random_state, parents, hooks):
         return keypoints_on_images
 
@@ -400,4 +423,7 @@ def Grayscale(alpha=0, from_colorspace="RGB", name=None, deterministic=False, ra
     percent of the grayscale image (i.e. 50 percent of color removed).
 
     """
+    if name is None:
+        name = "Unnamed%s" % (ia.caller_name(),)
+
     return ChangeColorspace(to_colorspace=ChangeColorspace.GRAY, alpha=alpha, from_colorspace=from_colorspace, name=name, deterministic=deterministic, random_state=random_state)

@@ -147,6 +147,10 @@ class Convolve(Augmenter):
 
         return result
 
+    def _augment_heatmaps(self, heatmaps, random_state, parents, hooks):
+        # TODO this can fail for some matrices, e.g. [[0, 0, 1]]
+        return heatmaps
+
     def _augment_keypoints(self, keypoints_on_images, random_state, parents, hooks):
         # TODO this can fail for some matrices, e.g. [[0, 0, 1]]
         return keypoints_on_images
@@ -241,6 +245,9 @@ def Sharpen(alpha=0, lightness=1, name=None, deterministic=False, random_state=N
         matrix = (1-alpha_sample) * matrix_nochange + alpha_sample * matrix_effect
         return [matrix] * nb_channels
 
+    if name is None:
+        name = "Unnamed%s" % (ia.caller_name(),)
+
     return Convolve(create_matrices, name=name, deterministic=deterministic, random_state=random_state)
 
 # TODO tests
@@ -329,6 +336,9 @@ def Emboss(alpha=0, strength=1, name=None, deterministic=False, random_state=Non
         matrix = (1-alpha_sample) * matrix_nochange + alpha_sample * matrix_effect
         return [matrix] * nb_channels
 
+    if name is None:
+        name = "Unnamed%s" % (ia.caller_name(),)
+
     return Convolve(create_matrices, name=name, deterministic=deterministic, random_state=random_state)
 
 # TODO tests
@@ -391,6 +401,9 @@ def EdgeDetect(alpha=0, name=None, deterministic=False, random_state=None):
         ], dtype=np.float32)
         matrix = (1-alpha_sample) * matrix_nochange + alpha_sample * matrix_effect
         return [matrix] * nb_channels
+
+    if name is None:
+        name = "Unnamed%s" % (ia.caller_name(),)
 
     return Convolve(create_matrices, name=name, deterministic=deterministic, random_state=random_state)
 
@@ -529,5 +542,8 @@ def DirectedEdgeDetect(alpha=0, direction=(0.0, 1.0), name=None, deterministic=F
         matrix = (1-alpha_sample) * matrix_nochange + alpha_sample * matrix_effect
 
         return [matrix] * nb_channels
+
+    if name is None:
+        name = "Unnamed%s" % (ia.caller_name(),)
 
     return Convolve(create_matrices, name=name, deterministic=deterministic, random_state=random_state)
