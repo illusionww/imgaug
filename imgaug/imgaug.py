@@ -3592,11 +3592,13 @@ class Batch(object):
         not be returned in the original order, making this information useful.
 
     """
-    def __init__(self, images=None, images_gt=None, keypoints=None, data=None):
+    def __init__(self, images=None, images_gt=None, mask_gt=None, keypoints=None, data=None):
         self.images = images
         self.images_aug = None
         self.images_gt = images_gt
         self.images_gt_aug = None
+        self.mask_gt = mask_gt
+        self.mask_gt_aug = None
         self.keypoints = keypoints
         self.keypoints_aug = None
         self.data = data
@@ -3744,10 +3746,11 @@ class BackgroundAugmenter(object):
         to C-1, where C is the number of CPU cores.
 
     """
-    def __init__(self, batch_loader, augseq, augseq2, queue_size=50, nb_workers="auto"):
+    def __init__(self, batch_loader, augseq, augseq_X, augseq_gt, queue_size=50, nb_workers="auto"):
         do_assert(queue_size > 0)
         self.augseq = augseq
-        self.augseq2 = augseq2
+        self.augseq_X = augseq_X
+        self.augseq_gt = augseq_gt
         self.source_finished_signals = batch_loader.finished_signals
         self.queue_source = batch_loader.queue
         self.queue_result = multiprocessing.Queue(queue_size)
@@ -3773,7 +3776,7 @@ class BackgroundAugmenter(object):
 
         seeds = current_random_state().randint(0, 10**6, size=(nb_workers,))
         for i in range(nb_workers):
-            worker = multiprocessing.Process(target=self._augment_images_worker, args=(augseq, augseq2, self.queue_source, self.queue_result, self.source_finished_signals, seeds[i]))
+            worker = multiprocessing.Process(target=self._augment_images_worker, args=(augseq, augseq_X, augseq_gt, self.queue_source, self.queue_result, self.source_finished_signals, seeds[i]))
             worker.daemon = True
             worker.start()
             self.workers.append(worker)
@@ -3802,7 +3805,7 @@ class BackgroundAugmenter(object):
             else:
                 return self.get_batch()
 
-    def _augment_images_worker(self, augseq, augseq2, queue_source, queue_result, source_finished_signals, seedval):
+    def _augment_images_worker(self, augseq, augseq_X, augseq_gt, queue_source, queue_result, source_finished_signals, seedval):
         """
         Worker function that endlessly queries the source queue (input
         batches), augments batches in it and sends the result to the output
@@ -3812,7 +3815,8 @@ class BackgroundAugmenter(object):
         np.random.seed(seedval)
         random.seed(seedval)
         augseq.reseed(seedval)
-        augseq2.reseed(seedval)
+        augseq_X.reseed(seedval)
+        augseq_gt.reseed(seedval)
         seed(seedval)
 
         while True:
@@ -3835,14 +3839,16 @@ class BackgroundAugmenter(object):
                     augseq_det = augseq.to_deterministic() if not augseq.deterministic else augseq
                     batch.images_aug = augseq_det.augment_images(batch.images)
                     batch.images_aug_gt = augseq_det.augment_images(batch.images_gt)
-                    batch_gt_mask = augseq_det.augment_images(batch_gt_mask)
-        
-                    batch.images_aug_gt[np.isnan(batch.images_aug_gt)] = -1
-                    batch.images_aug_gt[batch_gt_mask == 1] = -1.  # mask ground truth for custom masked loss
-                    batch.images_aug_gt = batch.images_aug_gt.astype(np.int)
+                    batch.mask_gt = augseq_det.augment_images(batch.mask_gt)
 
-                    augseq2_det = augseq2.to_deterministic() if not augseq2.deterministic else augseq2
-                    batch.images_aug = augseq2_det.augment_images(batch.images_aug)
+                    if augseq_X:
+                        batch.images_aug = augseq_X.augment_images(batch.images_aug)
+
+                    if augseq_gt:
+                        augseq_gt_det = augseq_gt.to_deterministic() if not augseq_gt.deterministic else augseq_gt
+                        batch.images_aug_gt = augseq_gt_det.augment_images(batch.images_aug_gt)
+                        batch.mask_aug_gt = augseq_gt_det.augment_images(batch_gt_mask)
+
                 elif batch_augment_images:
                     batch.images_aug = augseq.augment_images(batch.images)
                 elif batch_augment_keypoints:
