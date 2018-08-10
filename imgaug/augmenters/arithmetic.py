@@ -2,12 +2,16 @@
 Augmenters that perform simple arithmetic changes.
 
 Do not import directly from this file, as the categorization is not final.
-Use instead
-    `from imgaug import augmenters as iaa`
-and then e.g.
+Use instead::
+
+    from imgaug import augmenters as iaa
+
+and then e.g.::
+
     `seq = iaa.Sequential([iaa.Add((-5, 5)), iaa.Multiply((0.9, 1.1))])`
 
 List of augmenters:
+
     * Add
     * AddElementwise
     * AdditiveGaussianNoise
@@ -16,12 +20,16 @@ List of augmenters:
     * CoarseDropout
     * Invert
     * ContrastNormalization
+
 """
 from __future__ import print_function, division, absolute_import
 from .. import imgaug as ia
 # TODO replace these imports with iap.XYZ
 from ..parameters import StochasticParameter, Deterministic, Binomial, DiscreteUniform, Normal, Uniform, FromLowerResolution
 from .. import parameters as iap
+from PIL import Image
+from scipy import misc
+import tempfile
 import numpy as np
 import six.moves as sm
 
@@ -38,6 +46,7 @@ class Add(Augmenter):
     value : int or iterable of two ints or StochasticParameter, optional(default=0)
         Value to add to all
         pixels.
+
             * If an int, then that value will be used for all images.
             * If a tuple (a, b), then a value from the discrete range [a .. b]
               will be used.
@@ -159,6 +168,7 @@ class AddElementwise(Augmenter):
     value : int or iterable of two ints or StochasticParameter, optional(default=0)
         Value to add to the
         pixels.
+
             * If an int, then that value will be used for all images.
             * If a tuple (a, b), then values from the discrete range [a .. b]
               will be sampled.
@@ -270,6 +280,7 @@ def AdditiveGaussianNoise(loc=0, scale=0, per_channel=False, name=None, determin
     loc : int or float or tupel of two ints/floats or StochasticParameter, optional(default=0)
         Mean of the normal distribution that generates the
         noise.
+
             * If an int or float, exactly that value will be used.
             * If a tuple (a, b), a random value from the range a <= x <= b will
               be sampled per image.
@@ -280,6 +291,7 @@ def AdditiveGaussianNoise(loc=0, scale=0, per_channel=False, name=None, determin
         Standard deviation of the normal distribution that generates the
         noise. If this value gets too close to zero, the image will not be
         changed.
+
             * If an int or float, exactly that value will be used.
             * If a tuple (a, b), a random value from the range a <= x <= b will
               be sampled per image.
@@ -370,6 +382,7 @@ class Multiply(Augmenter):
     mul : float or tuple of two floats or StochasticParameter, optional(default=1.0)
         The value with which to multiply the pixel values in each
         image.
+
             * If a float, then that value will always be used.
             * If a tuple (a, b), then a value from the range a <= x <= b will
               be sampled per image and used for all pixels.
@@ -480,6 +493,7 @@ class MultiplyElementwise(Augmenter):
     mul : float or iterable of two floats or StochasticParameter, optional(default=1.0)
         The value by which to multiply the pixel values in the
         image.
+
             * If a float, then that value will always be used.
             * If a tuple (a, b), then a value from the range a <= x <= b will
               be sampled per image and pixel.
@@ -593,6 +607,7 @@ def Dropout(p=0, per_channel=False, name=None, deterministic=False,
     p : float or tuple of two floats or StochasticParameter, optional(default=0)
         The probability of any pixel being dropped (i.e. set to
         zero).
+
             * If a float, then that value will be used for all images. A value
               of 1.0 would mean that all pixels will be dropped and 0.0 that
               no pixels would be dropped. A value of 0.05 corresponds to 5
@@ -684,6 +699,7 @@ def CoarseDropout(p=0, size_px=None, size_percent=None,
     p : float or tuple of two floats or StochasticParameter, optional(default=0)
         The probability of any pixel being dropped (i.e. set to
         zero).
+
             * If a float, then that value will be used for all pixels. A value
               of 1.0 would mean, that all pixels will be dropped. A value of
               0.0 would lead to no pixels being dropped.
@@ -697,6 +713,7 @@ def CoarseDropout(p=0, size_px=None, size_percent=None,
     size_px : int or tuple of two ints or StochasticParameter, optional(default=None)
         The size of the lower resolution image from which to sample the dropout
         mask in absolute pixel dimensions.
+
             * If an integer, then that size will be used for both height and
               width. E.g. a value of 3 would lead to a 3x3 mask, which is then
               upsampled to HxW, where H is the image size and W the image width.
@@ -709,6 +726,7 @@ def CoarseDropout(p=0, size_px=None, size_percent=None,
     size_percent : float or tuple of two floats or StochasticParameter, optional(default=None)
         The size of the lower resolution image from which to sample the dropout
         mask *in percent* of the input image.
+
             * If a float, then that value will be used as the percentage of the
               height and width (relative to the original size). E.g. for value
               p, the mask will be sampled from (p*H)x(p*W) and later upsampled
@@ -808,6 +826,7 @@ class ReplaceElementwise(Augmenter):
         Mask that indicates the pixels that are supposed to be replaced.
         The mask will be thresholded with 0.5. A value of 1 then indicates a
         pixel that is supposed to be replaced.
+
             * If this is a number, then that value will be used as the
               probability of being a 1 per pixel.
             * If a tuple (a, b), then the probability will be sampled per image
@@ -818,6 +837,7 @@ class ReplaceElementwise(Augmenter):
     replacement : number or tuple of two number or list of number or StochasticParameter
         The replacement to use at all locations that are marked as `1` in
         the mask.
+
             * If this is a number, then that value will always be used as the
               replacement.
             * If a tuple (a, b), then the replacement will be sampled pixelwise
@@ -939,6 +959,7 @@ def SaltAndPepper(p=0, per_channel=False, name=None, deterministic=False, random
     p : float or tuple of two floats or StochasticParameter, optional(default=0)
         Probability of changing a pixel to salt/pepper
         noise.
+
             * If a float, then that value will be used for all images as the
               probability.
             * If a tuple (a, b), then a probability will be sampled per image
@@ -994,6 +1015,7 @@ def CoarseSaltAndPepper(p=0, size_px=None, size_percent=None,
     p : float or tuple of two floats or StochasticParameter, optional(default=0)
         Probability of changing a pixel to salt/pepper
         noise.
+
             * If a float, then that value will be used for all images as the
               probability.
             * If a tuple (a, b), then a probability will be sampled per image
@@ -1006,6 +1028,7 @@ def CoarseSaltAndPepper(p=0, size_px=None, size_percent=None,
     size_px : int or tuple of two ints or StochasticParameter, optional(default=None)
         The size of the lower resolution image from which to sample the noise
         mask in absolute pixel dimensions.
+
             * If an integer, then that size will be used for both height and
               width. E.g. a value of 3 would lead to a 3x3 mask, which is then
               upsampled to HxW, where H is the image size and W the image width.
@@ -1018,6 +1041,7 @@ def CoarseSaltAndPepper(p=0, size_px=None, size_percent=None,
     size_percent : float or tuple of two floats or StochasticParameter, optional(default=None)
         The size of the lower resolution image from which to sample the noise
         mask *in percent* of the input image.
+
             * If a float, then that value will be used as the percentage of the
               height and width (relative to the original size). E.g. for value
               p, the mask will be sampled from (p*H)x(p*W) and later upsampled
@@ -1106,6 +1130,7 @@ def Salt(p=0, per_channel=False, name=None, deterministic=False, random_state=No
     p : float or tuple of two floats or StochasticParameter, optional(default=0)
         Probability of changing a pixel to salt
         noise.
+
             * If a float, then that value will be used for all images as the
               probability.
             * If a tuple (a, b), then a probability will be sampled per image
@@ -1169,6 +1194,7 @@ def CoarseSalt(p=0, size_px=None, size_percent=None,
     p : float or tuple of two floats or StochasticParameter, optional(default=0)
         Probability of changing a pixel to salt
         noise.
+
             * If a float, then that value will be used for all images as the
               probability.
             * If a tuple (a, b), then a probability will be sampled per image
@@ -1181,6 +1207,7 @@ def CoarseSalt(p=0, size_px=None, size_percent=None,
     size_px : int or tuple of two ints or StochasticParameter, optional(default=None)
         The size of the lower resolution image from which to sample the noise
         mask in absolute pixel dimensions.
+
             * If an integer, then that size will be used for both height and
               width. E.g. a value of 3 would lead to a 3x3 mask, which is then
               upsampled to HxW, where H is the image size and W the image width.
@@ -1193,6 +1220,7 @@ def CoarseSalt(p=0, size_px=None, size_percent=None,
     size_percent : float or tuple of two floats or StochasticParameter, optional(default=None)
         The size of the lower resolution image from which to sample the noise
         mask *in percent* of the input image.
+
             * If a float, then that value will be used as the percentage of the
               height and width (relative to the original size). E.g. for value
               p, the mask will be sampled from (p*H)x(p*W) and later upsampled
@@ -1288,6 +1316,7 @@ def Pepper(p=0, per_channel=False, name=None, deterministic=False, random_state=
     p : float or tuple of two floats or StochasticParameter, optional(default=0)
         Probability of changing a pixel to pepper
         noise.
+
             * If a float, then that value will be used for all images as the
               probability.
             * If a tuple (a, b), then a probability will be sampled per image
@@ -1351,6 +1380,7 @@ def CoarsePepper(p=0, size_px=None, size_percent=None,
     p : float or tuple of two floats or StochasticParameter, optional(default=0)
         Probability of changing a pixel to pepper
         noise.
+
             * If a float, then that value will be used for all images as the
               probability.
             * If a tuple (a, b), then a probability will be sampled per image
@@ -1363,6 +1393,7 @@ def CoarsePepper(p=0, size_px=None, size_percent=None,
     size_px : int or tuple of two ints or StochasticParameter, optional(default=None)
         The size of the lower resolution image from which to sample the noise
         mask in absolute pixel dimensions.
+
             * If an integer, then that size will be used for both height and
               width. E.g. a value of 3 would lead to a 3x3 mask, which is then
               upsampled to HxW, where H is the image size and W the image width.
@@ -1375,6 +1406,7 @@ def CoarsePepper(p=0, size_px=None, size_percent=None,
     size_percent : float or tuple of two floats or StochasticParameter, optional(default=None)
         The size of the lower resolution image from which to sample the noise
         mask *in percent* of the input image.
+
             * If a float, then that value will be used as the percentage of the
               height and width (relative to the original size). E.g. for value
               p, the mask will be sampled from (p*H)x(p*W) and later upsampled
@@ -1476,6 +1508,7 @@ class Invert(Augmenter):
     p : float or StochasticParameter, optional(default=0)
         The probability of an image to be
         inverted.
+
             * If a float, then that probability will be used for all images.
             * If a StochasticParameter, then that parameter will queried per
               image and is expected to return values in the range [0.0, 1.0],
@@ -1594,6 +1627,7 @@ class ContrastNormalization(Augmenter):
     alpha : float or tuple of two floats or StochasticParameter, optional(default=1.0)
         Strength of the contrast normalization. Higher values than 1.0
         lead to higher contrast, lower values decrease the contrast.
+
             * If a float, then that value will be used for all images.
             * If a tuple (a, b), then a value will be sampled per image from
               the range a <= x <= b and be used as the alpha value.
@@ -1688,3 +1722,96 @@ class ContrastNormalization(Augmenter):
 
     def get_parameters(self):
         return [self.alpha, self.per_channel]
+
+
+class JpegCompression(Augmenter):
+    """
+    Noising an image using a jpeg compression.
+
+    During saving an image to `jpeg` format user can select quality of image to preserve. The lower quality,
+    the higher compression is used. After image loading/decoding, artifacts caused by the compression can be noticed.
+    For more details, see https://en.wikipedia.org/wiki/Compression_artifact.
+
+    Parameters
+    ----------
+    compression : int or tuple of two ints or StochasticParameter
+        Degree of compression using saving to `jpeg` format in range [0, 100]
+        High values for compression cause more artifacts. Standard value for image processing software is default value
+        set to between 50 and 80. At 100 image is unreadable and at 0 no compression is used and the image occupies much
+        more memory.
+            * If a single int, then that value will be used for the compression degree.
+            * If a tuple of two ints (a, b), then the compression will be a
+              value sampled from the interval [a..b].
+            * If a StochasticParameter, then N samples will be drawn from
+              that parameter per N input images, each representing the compression
+              for the nth image. Expected to be discrete.
+
+    name : string, optional(default=None)
+        See `Augmenter.__init__()`
+
+    deterministic : bool, optional(default=False)
+        See `Augmenter.__init__()`
+
+    random_state : int or np.random.RandomState or None, optional(default=None)
+        See `Augmenter.__init__()`
+
+    Examples
+    --------
+    >>> aug = iaa.JpegCompression(compression=(80, 95))
+
+    noises all images using a jpeg compression algorithm with max compression 80 to 95
+    """
+    def __init__(self, compression=50, name=None, deterministic=False, random_state=None):
+        super(JpegCompression, self).__init__(name=name, deterministic=deterministic, random_state=random_state)
+        if ia.is_single_number(compression):
+            assert 100 >= compression >= 0 and type(
+                compression) == int, "Expected compression to have range [0, 100], got value %.4f." % (compression,)
+            self.compression = Deterministic(compression)
+        elif ia.is_iterable(compression):
+            assert len(compression) == 2, "Expected tuple/list with 2 entries, got %d entries." % (len(compression),)
+            self.compression = Uniform(compression[0], compression[1])
+        elif isinstance(compression, StochasticParameter):
+            self.compression = compression
+        else:
+            raise Exception("Expected float or int, tuple/list with 2 entries or StochasticParameter. Got %s." % (
+                type(compression),))
+
+        self.maximum_quality = 100
+
+    def _augment_images(self, images, random_state, parents, hooks):
+        channels = images[0].shape[-1]
+        reset_last_dim = len(images[0].shape) == 3 and channels == 1
+        result = images
+        nb_images = len(images)
+        seeds = random_state.randint(0, 10 ** 6, (nb_images + 1,))
+
+        samples = self.compression.draw_samples((nb_images,), random_state=ia.new_random_state(seeds[-1]))
+
+        for i in sm.xrange(nb_images):
+            image = images[i].astype(np.float32)
+            if reset_last_dim:
+                image = image[..., 0]
+            sample = int(samples[-1])
+            assert 100 >= sample >= 0
+            img = Image.fromarray(image.astype(np.uint8))
+            with tempfile.NamedTemporaryFile(mode='wb', suffix='.jpg') as f:
+                img.save(f, quality=self.maximum_quality - sample)
+                if channels == 1:
+                    image = misc.imread(f.name, mode='L')
+                else:
+                    image = misc.imread(f.name, mode='RGB')
+            if reset_last_dim:
+                image = image[..., np.newaxis]
+            result[i] = image
+        if channels == 1:
+            result = result[..., np.newaxis]
+        return result
+
+    def _augment_heatmaps(self, heatmaps, random_state, parents, hooks):
+        return heatmaps
+      
+    def _augment_keypoints(self, keypoints_on_images, random_state, parents, hooks):
+        return keypoints_on_images
+
+    def get_parameters(self):
+        return [self.compression]
