@@ -3746,7 +3746,7 @@ class BackgroundAugmenter(object):
         to C-1, where C is the number of CPU cores.
 
     """
-    def __init__(self, batch_loader, augseq, augseq_X, augseq_gt, queue_size=50, nb_workers="auto"):
+    def __init__(self, batch_loader, augseq, augseq_X=None, augseq_gt=None, queue_size=50, nb_workers="auto"):
         do_assert(queue_size > 0)
         self.augseq = augseq
         self.augseq_X = augseq_X
@@ -3834,20 +3834,18 @@ class BackgroundAugmenter(object):
                     batch.images_aug = augseq_det.augment_images(batch.images)
                     batch.keypoints_aug = augseq_det.augment_keypoints(batch.keypoints)
                 elif batch_augment_images and batch_augment_images_gt:
-                    batch_gt_mask = np.array(np.isnan(batch.images_gt), dtype=np.int)
-                    
                     augseq_det = augseq.to_deterministic() if not augseq.deterministic else augseq
                     batch.images_aug = augseq_det.augment_images(batch.images)
-                    batch.images_aug_gt = augseq_det.augment_images(batch.images_gt)
-                    batch.mask_gt = augseq_det.augment_images(batch.mask_gt)
+                    batch.images_gt_aug = augseq_det.augment_images(batch.images_gt)
+                    batch.mask_gt_aug = augseq_det.augment_images(batch.mask_gt)
 
                     if augseq_X:
                         batch.images_aug = augseq_X.augment_images(batch.images_aug)
 
                     if augseq_gt:
                         augseq_gt_det = augseq_gt.to_deterministic() if not augseq_gt.deterministic else augseq_gt
-                        batch.images_aug_gt = augseq_gt_det.augment_images(batch.images_aug_gt)
-                        batch.mask_aug_gt = augseq_gt_det.augment_images(batch_gt_mask)
+                        batch.images_gt_aug = augseq_gt_det.augment_images(batch.images_gt_aug)
+                        batch.mask_gt_aug = augseq_gt_det.augment_images(batch.mask_gt_aug)
 
                 elif batch_augment_images:
                     batch.images_aug = augseq.augment_images(batch.images)
