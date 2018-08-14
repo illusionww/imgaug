@@ -3815,8 +3815,10 @@ class BackgroundAugmenter(object):
         np.random.seed(seedval)
         random.seed(seedval)
         augseq.reseed(seedval)
-        augseq_X.reseed(seedval)
-        augseq_gt.reseed(seedval)
+        if augseq_X:
+            augseq_X.reseed(seedval)
+        if augseq_gt:
+            augseq_gt.reseed(seedval)
         seed(seedval)
 
         while True:
